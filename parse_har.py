@@ -16,6 +16,7 @@ import json
 import sys
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Set, Tuple
+import re
 from urllib.parse import urlparse, parse_qs
 
 
@@ -64,6 +65,25 @@ def decode_pool(pool: List[Any]) -> Any:
     return decode_idx(0)
 
 
+def normalize_price(item: Dict[str, Any]) -> int:
+    """Return integer price in CNY; standard equipment treated as 0."""
+    if item.get("isStandardEquipment"):
+        return 0
+    val = item.get("priceNumeric")
+    if isinstance(val, (int, float)):
+        return int(val)
+    if isinstance(val, str) and val.strip():
+        if val.strip().isdigit():
+            return int(val.strip())
+    # try parse formatted price string
+    price_str = item.get("price")
+    if isinstance(price_str, str):
+        digits = re.findall(r"\\d+", price_str.replace(",", ""))
+        if digits:
+            return int(digits[0])
+    return 0
+
+
 def load_har(path: Path) -> Dict[str, Any]:
     with path.open("r", encoding="utf-8") as f:
         return json.load(f)
@@ -107,6 +127,7 @@ def collect_customer_configurator(har: Dict[str, Any]) -> Tuple[Dict[str, Dict[s
                         if not oid:
                             continue
                         meta = options_by_id.setdefault(oid, {})
+                        price_val = normalize_price(item)
                         meta.update(
                             {
                                 "optionId": oid,
@@ -119,7 +140,7 @@ def collect_customer_configurator(har: Dict[str, Any]) -> Tuple[Dict[str, Dict[s
                                 "categoryTitle": cat_title,
                                 "groupId": group_id,
                                 "groupTitle": group_title,
-                                "priceNumeric": item.get("priceNumeric"),
+                                "priceNumeric": price_val,
                                 "isStandardEquipment": bool(item.get("isStandardEquipment")),
                                 "isSelected": bool(item.get("isSelected")),
                                 "equipmentType": item.get("equipmentType"),

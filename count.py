@@ -43,7 +43,7 @@ def count_models(num_vars: int, clauses: List[List[int]]) -> int:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Count models of data/model.cnf using pysdd.")
+    parser = argparse.ArgumentParser(description="Count models of a CNF using pysdd.")
     parser.add_argument("--cnf", type=Path, default=Path("data/model.cnf"))
     parser.add_argument("--out", type=Path, default=Path("data/count_result.txt"))
     args = parser.parse_args()
